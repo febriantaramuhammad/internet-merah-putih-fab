@@ -1,0 +1,43 @@
+# ===========================================
+# .htaccess — FAB Dashboard — Telkomsat
+# ===========================================
+
+# 🔗 Hilangkan ekstensi .php dari URL
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^([^\.]+)$ $1.php [NC,L]
+
+# 🔒 Larang akses langsung ke file sensitif
+<FilesMatch "\.(ini|log|env|sql|db|md|txt|yml|yaml|json|xml|bak|conf|cfg)$">
+    Require all denied
+</FilesMatch>
+
+# 🔒 Lindungi file konfigurasi
+<Files "config.php">
+    Require all denied
+</Files>
+
+# 🔒 Lindungi file setup setelah instalasi
+<Files "setup.php">
+    Require all denied
+</Files>
+
+# ✅ Izinkan akses ke aset publik
+<FilesMatch "\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$">
+    Require all granted
+</FilesMatch>
+
+# 🌐 Atur default charset
+AddDefaultCharset UTF-8
+
+# 🚫 Nonaktifkan directory listing
+Options -Indexes
+
+# Redirect www ke non-www (opsional)
+RewriteCond %{HTTP_HOST} ^www\.(.*)$ [NC]
+RewriteRule ^(.*)$ http://%1/$1 [R=301,L]
+
+# Redirect HTTP ke HTTPS (di produksi)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
