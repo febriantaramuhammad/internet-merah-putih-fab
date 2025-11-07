@@ -305,3 +305,18 @@ a {
     color: #90caf9;
     margin-top: 4px;
 }
+
+.btn-export {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #455a64;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+.btn-export:hover {
+    background: #37474f;
+}

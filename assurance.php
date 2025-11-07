@@ -259,6 +259,11 @@ $tickets = $stmt->fetchAll();
 
     <main class="main-content">
         <header class="main-header">
+            <?php if (canEditFulfillment()): ?>
+                <div style="text-align: right; margin-bottom: 15px;">
+                    <a href="export.php?module=fulfillment" class="btn-export">📥 Ekspor ke CSV</a>
+                </div>
+            <?php endif; ?>
             <h1>Assurance</h1>
             <a href="dashboard">← Kembali ke Dashboard</a>
         </header>
