@@ -181,7 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="logo">
                 <img src="assets/images/logo-login.png" alt="Telkomsat Logo">
             </div>
-            <h2>F . A <span style="color: #d32f2f;">. B</span></h2>
+            <h2>Fulfillment . Assurance <span style="color: #d32f2f;">. Billing</span></h2>
             <!-- <h2>Fulfillment . Assurance <span style="color: #d32f2f;"> . Billing</span></h2> -->
 
             <?php if ($error): ?>
@@ -190,7 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <form method="POST">
                 <div class="form-group">
-                    <input type="text" name="username" placeholder="NIK Pegawai" required autocomplete="off">
+                    <input type="text" name="username" placeholder="Username" required autocomplete="off">
                 </div>
                 <div class="form-group">
                     <input type="password" name="password" placeholder="Password" required>

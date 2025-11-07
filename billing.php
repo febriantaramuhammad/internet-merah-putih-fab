@@ -6,19 +6,21 @@ include 'config.php';
 $message = '';
 // Handle pembayaran (jika ada aksi "Bayar")
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invoice_id'])) {
+    if (!canEditBilling()) {
+        die("Akses ditolak.");
+    }
+
     $invoiceId = $_POST['invoice_id'];
     $stmt = $pdo->prepare("UPDATE billing_invoices SET status = 'paid', paid_at = NOW() WHERE invoice_id = ? AND status = 'unpaid'");
     $stmt->execute([$invoiceId]);
     $message = "✅ Pembayaran untuk invoice $invoiceId berhasil dicatat.";
 }
 
-// Ambil semua invoice
 $invoices = $pdo->query("
     SELECT * FROM billing_invoices 
     ORDER BY due_date ASC, created_at DESC
 ")->fetchAll();
 
-// Hitung total tagihan & terbayar
 $summary = $pdo->query("
     SELECT 
         SUM(amount) as total_amount,
@@ -162,7 +164,6 @@ $summary = $pdo->query("
             border: 1px solid #ffcdd2;
         }
 
-        /* RESPONSIF UNTUK MOBILE */
         @media (max-width: 768px) {
             .kpi-grid {
                 grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -177,35 +178,29 @@ $summary = $pdo->query("
             }
         }
     </style>
-    <!-- SweetAlert2 -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<!-- Toast Notification -->
-<script>
-function showToast(message, type = 'success') {
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerText = message;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.classList.add('show'), 10);
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => document.body.removeChild(toast), 300);
-    }, 3000);
-}
-
-// Tampilkan toast jika ada pesan
-<?php if (!empty($message)): ?>
-    document.addEventListener('DOMContentLoaded', () => {
-        const msg = <?= json_encode($message) ?>;
-        const type = msg.includes('❌') ? 'error' : 'success';
-        showToast(msg.replace('✅ ', '').replace('❌ ', ''), type);
-    });
-<?php endif; ?>
-</script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerText = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => document.body.removeChild(toast), 300);
+        }, 3000);
+    }
+    <?php if (!empty($message)): ?>
+        document.addEventListener('DOMContentLoaded', () => {
+            const msg = <?= json_encode($message) ?>;
+            const type = msg.includes('❌') ? 'error' : 'success';
+            showToast(msg.replace('✅ ', '').replace('❌ ', ''), type);
+        });
+    <?php endif; ?>
+    </script>
 </head>
 <body class="app-layout">
-    <!-- Sidebar -->
     <aside class="sidebar">
         <div class="sidebar-header">
             <div class="logo">
@@ -214,29 +209,18 @@ function showToast(message, type = 'success') {
             <span class="username"><?= htmlspecialchars($_SESSION['username']) ?></span>
         </div>
         <nav class="sidebar-nav">
-            <a href="dashboard" class="nav-item <?= basename($_SERVER['PHP_SELF']) === 'dashboard.php' ? 'active' : '' ?>">
-                📊 Dashboard
-            </a>
-            <a href="fulfillment" class="nav-item <?= basename($_SERVER['PHP_SELF']) === 'fulfillment.php' ? 'active' : '' ?>">
-                📦 Fulfillment
-            </a>
-            <a href="assurance" class="nav-item <?= basename($_SERVER['PHP_SELF']) === 'assurance.php' ? 'active' : '' ?>">
-                🛠️ Assurance
-            </a>
-            <a href="billing" class="nav-item <?= basename($_SERVER['PHP_SELF']) === 'billing.php' ? 'active' : '' ?>">
-                💰 Billing
-            </a>
-            <a href="logout" class="nav-item logout">
-                🚪 Logout
-            </a>
+            <a href="dashboard" class="nav-item <?= basename($_SERVER['PHP_SELF']) === 'dashboard.php' ? 'active' : '' ?>">📊 Dashboard</a>
+            <a href="fulfillment" class="nav-item <?= basename($_SERVER['PHP_SELF']) === 'fulfillment.php' ? 'active' : '' ?>">📦 Fulfillment</a>
+            <a href="assurance" class="nav-item <?= basename($_SERVER['PHP_SELF']) === 'assurance.php' ? 'active' : '' ?>">🛠️ Assurance</a>
+            <a href="billing" class="nav-item <?= basename($_SERVER['PHP_SELF']) === 'billing.php' ? 'active' : '' ?>">💰 Billing</a>
+            <a href="logout" class="nav-item logout">🚪 Logout</a>
         </nav>
     </aside>
 
-    <!-- Konten Utama -->
     <main class="main-content">
         <header class="main-header">
             <h1>Modul Billing</h1>
-            <a href="dashboard.php">← Kembali ke Dashboard</a>
+            <a href="dashboard">← Kembali ke Dashboard</a>
         </header>
 
         <?php if (!empty($message)): ?>
@@ -294,13 +278,17 @@ function showToast(message, type = 'success') {
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <?php if ($inv['status'] === 'unpaid'): ?>
+                                    <?php if (canEditBilling() && $inv['status'] === 'unpaid'): ?>
                                         <button type="button" class="btn-small" 
                                             onclick="confirmPayment('<?= htmlspecialchars($inv['invoice_id']) ?>')">
                                             Tandai Lunas
                                         </button>
                                     <?php else: ?>
-                                        <span class="status status-paid">Lunas</span>
+                                        <?php if ($inv['status'] === 'paid'): ?>
+                                            <span class="status status-paid">Lunas</span>
+                                        <?php else: ?>
+                                            <span class="status status-unpaid">Belum Bayar</span>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -312,31 +300,32 @@ function showToast(message, type = 'success') {
             <?php endif; ?>
         </section>
     </main>
+
     <script>
-function confirmPayment(invoiceId) {
-    Swal.fire({
-        title: 'Konfirmasi Pembayaran?',
-        text: `Invoice ${invoiceId} akan ditandai sebagai LUNAS.`,
-        icon: 'success',
-        showCancelButton: true,
-        confirmButtonText: 'Ya, Lunaskan!',
-        cancelButtonText: 'Batal'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.style.display = 'none';
-            
-            const invoiceIdInput = document.createElement('input');
-            invoiceIdInput.name = 'invoice_id';
-            invoiceIdInput.value = invoiceId;
-            form.appendChild(invoiceIdInput);
-            
-            document.body.appendChild(form);
-            form.submit();
-        }
-    });
-}
-</script>
+    function confirmPayment(invoiceId) {
+        Swal.fire({
+            title: 'Konfirmasi Pembayaran?',
+            text: `Invoice ${invoiceId} akan ditandai sebagai LUNAS.`,
+            icon: 'success',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Lunaskan!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.style.display = 'none';
+                
+                const invoiceIdInput = document.createElement('input');
+                invoiceIdInput.name = 'invoice_id';
+                invoiceIdInput.value = invoiceId;
+                form.appendChild(invoiceIdInput);
+                
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    }
+    </script>
 </body>
 </html>

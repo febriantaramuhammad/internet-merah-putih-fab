@@ -98,6 +98,7 @@ function showToast(message, type = 'success') {
                 <img src="assets/images/logo-login.png" alt="imp logo" width="100%">
             </div>
             <span class="username"><?= htmlspecialchars($_SESSION['username']) ?></span>
+            <span class="user-role"><?= ucfirst($_SESSION['role']) ?></span>
         </div>
         <nav class="sidebar-nav">
             <a href="dashboard" class="nav-item <?= basename($_SERVER['PHP_SELF']) === 'dashboard.php' ? 'active' : '' ?>">

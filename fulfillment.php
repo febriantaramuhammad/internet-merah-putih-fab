@@ -6,6 +6,11 @@ include 'config.php';
 $message = '';
 // Handle form submit: buat order baru
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create') {
+    // Pastikan hanya admin/operator yang bisa submit
+    if (!canEditFulfillment()) {
+        die("Akses ditolak.");
+    }
+
     $order_id = trim($_POST['order_id'] ?? '');
     $customer = trim($_POST['customer'] ?? '');
     $service = trim($_POST['service'] ?? '');
@@ -28,10 +33,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 // Handle tombol "Selesaikan"
-// Handle tombol "Selesaikan"
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'complete') {
+    if (!canEditFulfillment()) {
+        die("Akses ditolak.");
+    }
+
     $orderId = $_POST['order_id'];
-    $updatedBy = $_SESSION['username'] ?? 'system'; // Pastikan ada nilai
+    $updatedBy = $_SESSION['username'] ?? 'system';
 
     try {
         // Update status ke completed
@@ -60,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             ");
             $stmt->execute([$invoiceId, $orderId, $order['customer_name'], $order['revenue'], $dueDate]);
 
-            // 🔹 CATAT LOG AKTIVITAS — pindahkan ke dalam blok sukses
+            // Catat log aktivitas
             $stmt = $pdo->prepare("
                 INSERT INTO fulfillment_logs (order_id, action, old_status, new_status, performed_by)
                 VALUES (?, 'completed', 'pending', 'completed', ?)
@@ -79,6 +87,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // Ambil semua order
 $stmt = $pdo->query("SELECT * FROM fulfillment_orders ORDER BY created_at DESC");
 $orders = $stmt->fetchAll();
+?>
+
+<?php
+// DEBUG: Tampilkan role saat ini
+echo "<!-- DEBUG: Role = " . ($_SESSION['role'] ?? 'TIDAK ADA') . " -->";
+echo "<!-- DEBUG: canEditFulfillment() = " . (canEditFulfillment() ? 'true' : 'false') . " -->";
 ?>
 
 <!DOCTYPE html>
@@ -231,31 +245,30 @@ $orders = $stmt->fetchAll();
         }
     </style>
     <!-- SweetAlert2 -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<!-- Toast Notification (dengan CSS di atas) -->
-<script>
-function showToast(message, type = 'success') {
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerText = message;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.classList.add('show'), 10);
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => document.body.removeChild(toast), 300);
-    }, 3000);
-}
+    <!-- Toast Notification -->
+    <script>
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerText = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => document.body.removeChild(toast), 300);
+        }, 3000);
+    }
 
-// Tampilkan toast jika ada pesan dari PHP
-<?php if (!empty($message)): ?>
-    document.addEventListener('DOMContentLoaded', () => {
-        const msg = <?= json_encode($message) ?>;
-        const type = msg.includes('❌') ? 'error' : 'success';
-        showToast(msg.replace('✅ ', '').replace('❌ ', ''), type);
-    });
-<?php endif; ?>
-</script>
+    <?php if (!empty($message)): ?>
+        document.addEventListener('DOMContentLoaded', () => {
+            const msg = <?= json_encode($message) ?>;
+            const type = msg.includes('❌') ? 'error' : 'success';
+            showToast(msg.replace('✅ ', '').replace('❌ ', ''), type);
+        });
+    <?php endif; ?>
+    </script>
 </head>
 <body class="app-layout">
     <!-- Sidebar -->
@@ -289,28 +302,27 @@ function showToast(message, type = 'success') {
     <main class="main-content">
         <header class="main-header">
             <h1>Fulfillment</h1>
-            <a href="dashboard.php">← Kembali ke Dashboard</a>
+            <a href="dashboard">← Kembali ke Dashboard</a>
         </header>
 
+        <?php if (!empty($message)): ?>
+            <div class="alert"><?= htmlspecialchars($message) ?></div>
+        <?php endif; ?>
+
+        <!-- Form Tambah Order — HANYA UNTUK ADMIN/OPERATOR -->
         <?php if (canEditFulfillment()): ?>
             <section class="form-section">
                 <h3>Tambah Order Baru</h3>
-                <!-- ... form tetap sama ... -->
+                <form method="POST">
+                    <input type="hidden" name="action" value="create">
+                    <input type="text" name="order_id" placeholder="ID Order (contoh: ORD-1001)" required>
+                    <input type="text" name="customer" placeholder="Nama Pelanggan" required>
+                    <input type="text" name="service" placeholder="Jenis Layanan" required>
+                    <input type="number" name="revenue" placeholder="Nilai Order (Rp)" step="0.01" min="0">
+                    <button type="submit">Buat Order</button>
+                </form>
             </section>
         <?php endif; ?>
-
-        <!-- Form Tambah Order -->
-        <section class="form-section">
-            <h3>Tambah Order Baru</h3>
-            <form method="POST">
-                <input type="hidden" name="action" value="create">
-                <input type="text" name="order_id" placeholder="ID Order (contoh: ORD-1001)" required>
-                <input type="text" name="customer" placeholder="Nama Pelanggan" required>
-                <input type="text" name="service" placeholder="Jenis Layanan" required>
-                <input type="number" name="revenue" placeholder="Nilai Order (Rp)" step="0.01" min="0">
-                <button type="submit">Buat Order</button>
-            </form>
-        </section>
 
         <!-- Tabel Data -->
         <section class="table-section">
@@ -362,38 +374,38 @@ function showToast(message, type = 'success') {
             <?php endif; ?>
         </section>
     </main>
+
     <script>
-function confirmComplete(orderId) {
-    Swal.fire({
-        title: 'Yakin?',
-        text: `Ingin menyelesaikan order ${orderId}? Invoice otomatis dibuat.`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Ya, Selesaikan!',
-        cancelButtonText: 'Batal',
-        reverseButtons: true
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Submit form via fetch atau buat form sementara
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.style.display = 'none';
-            
-            const action = document.createElement('input');
-            action.name = 'action';
-            action.value = 'complete';
-            form.appendChild(action);
-            
-            const orderIdInput = document.createElement('input');
-            orderIdInput.name = 'order_id';
-            orderIdInput.value = orderId;
-            form.appendChild(orderIdInput);
-            
-            document.body.appendChild(form);
-            form.submit();
-        }
-    });
-}
-</script>
+    function confirmComplete(orderId) {
+        Swal.fire({
+            title: 'Yakin?',
+            text: `Ingin menyelesaikan order ${orderId}? Invoice otomatis dibuat.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Selesaikan!',
+            cancelButtonText: 'Batal',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.style.display = 'none';
+                
+                const action = document.createElement('input');
+                action.name = 'action';
+                action.value = 'complete';
+                form.appendChild(action);
+                
+                const orderIdInput = document.createElement('input');
+                orderIdInput.name = 'order_id';
+                orderIdInput.value = orderId;
+                form.appendChild(orderIdInput);
+                
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    }
+    </script>
 </body>
 </html>

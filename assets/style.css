@@ -298,3 +298,10 @@ a {
 .link-detail:hover {
     text-decoration: underline;
 }
+
+.user-role {
+    display: block;
+    font-size: 0.75em;
+    color: #90caf9;
+    margin-top: 4px;
+}

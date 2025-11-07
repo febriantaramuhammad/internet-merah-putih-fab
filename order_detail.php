@@ -124,7 +124,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_invoice'])) {
 <body class="app-layout">
     <aside class="sidebar">
         <div class="sidebar-header">
-            <div class="logo">🛰️ FAB</div>
+            <div class="logo">
+                <img src="assets/images/logo-login.png" alt="imp logo" width="100%">
+            </div>
             <span class="username"><?= htmlspecialchars($_SESSION['username']) ?></span>
         </div>
         <nav class="sidebar-nav">
