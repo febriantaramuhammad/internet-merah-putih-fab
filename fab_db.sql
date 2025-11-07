@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 06 Nov 2025 pada 05.11
+-- Waktu pembuatan: 07 Nov 2025 pada 05.18
 -- Versi server: 10.4.32-MariaDB
 -- Versi PHP: 8.2.12
 
@@ -123,7 +123,9 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `role`, `password`) VALUES
-(1, 'admin', 'admin', '$2y$10$rAq9lr5FKe6n98wDQ7oG8ep/q3S8mH4mTr0/pi8AwjJD29P2qlWGm');
+(1, 'admin', 'admin', '$2y$10$QJe9Dq8x.KJUKVRNrL31i.3VGaUNn7Ye/nPlfiZCyxC17Et1Z1tda'),
+(12, 'operator', 'operator', '$2y$10$QJe9Dq8x.KJUKVRNrL31i.3VGaUNn7Ye/nPlfiZCyxC17Et1Z1tda'),
+(13, 'viewer', 'viewer', '$2y$10$QJe9Dq8x.KJUKVRNrL31i.3VGaUNn7Ye/nPlfiZCyxC17Et1Z1tda');
 
 --
 -- Indexes for dumped tables
@@ -183,7 +185,7 @@ ALTER TABLE `fulfillment_orders`
 -- AUTO_INCREMENT untuk tabel `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
